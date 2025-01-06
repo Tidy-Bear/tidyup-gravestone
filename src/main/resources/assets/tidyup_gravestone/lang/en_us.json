@@ -1,0 +1,7 @@
+{
+  "tidyup_gravestone.lang.version": "0.0.1",
+  "tidyup_gravestone.config.section.section_name": "Section Title",
+
+  "tidyup_gravestone.config.config_name": "Config Entry Title",
+  "tidyup_gravestone.config.config_name.tooltip": "Describe the config entry, but in I18N way.\n[Default: true]"
+}

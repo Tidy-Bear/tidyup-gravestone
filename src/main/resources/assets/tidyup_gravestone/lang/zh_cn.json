@@ -1,0 +1,7 @@
+{
+  "tidyup_gravestone.lang.version": "0.0.1",
+  "tidyup_gravestone.config.section.section_name": "分区标题",
+
+  "tidyup_gravestone.config.config_name": "配置项标题",
+  "tidyup_gravestone.config.config_name.tooltip": "描述这个配置项，但以 I18N 方式。\n[默认值：true]"
+}
