@@ -5,6 +5,8 @@
   "package": "me.ctidy.mcmod.tidyup.gravestone.mixin",
   "refmap": "${mod_id}.refmap.json",
   "mixins": [
+    "DeathMixin",
+    "GraveStoneBlockMixin",
     "ObituaryItemMixin"
   ],
   "client": [],

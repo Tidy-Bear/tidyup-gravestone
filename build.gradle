@@ -231,12 +231,16 @@ dependencies {
     // required by some mods using kotlin
     runtimeOnly "thedarkcolour:kotlinforforge:${kff_version}"
 
-    implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:${clothconfig_version}")
+    implementation fg.deobf("curse.maven:architectury-api-419699:$architectury_api_version")
+    implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:$clothconfig_version")
+
+    implementation fg.deobf("maven.modrinth:gravestone-mod:$gravestone_version")
 
     // compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
-    implementation fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
-
-    implementation fg.deobf("maven.modrinth:gravestone-mod:${gravestone_version}")
+    implementation fg.deobf("top.theillusivec4.curios:curios-forge:$curios_version")
+    // runtimeOnly fg.deobf("curse.maven:artifacts-312353:$artifacts_version")  // bring some test cases
+    runtimeOnly fg.deobf("curse.maven:octolib-916747:$octolib_version")  // dependency of the below
+    runtimeOnly fg.deobf("curse.maven:relics-445274:$relics_version")    // bring some test cases
 
     // Took a fucking long long LOOOOOOONG time to settle this :(
     // Refmap is missing in its production, causing an exception during my dev run.
