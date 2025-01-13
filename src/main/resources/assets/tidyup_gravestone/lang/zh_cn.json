@@ -1,7 +1,11 @@
 {
-  "tidyup_gravestone.lang.version": "0.0.1",
-  "tidyup_gravestone.config.section.section_name": "分区标题",
+  "tidyup_gravestone.lang.version": "1.0.0",
 
-  "tidyup_gravestone.config.config_name": "配置项标题",
-  "tidyup_gravestone.config.config_name.tooltip": "描述这个配置项，但以 I18N 方式。\n[默认值：true]"
+  "item.gravestone.obituary.desc.separator": "：",
+  "item.gravestone.obituary.player_name.desc": "玩家",
+  "item.gravestone.obituary.time.desc": "时间",
+  "item.gravestone.obituary.item_count.desc": "物品",
+  "item.gravestone.obituary.id.desc": "ID",
+  "item.gravestone.obituary.restore.desc1": "手持时 shift + 右键：",
+  "item.gravestone.obituary.restore.desc2": "恢复物品（需要权限）"
 }

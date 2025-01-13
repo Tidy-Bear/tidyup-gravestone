@@ -1,7 +1,11 @@
 {
-  "tidyup_gravestone.lang.version": "0.0.1",
-  "tidyup_gravestone.config.section.section_name": "Section Title",
+  "tidyup_gravestone.lang.version": "1.0.0",
 
-  "tidyup_gravestone.config.config_name": "Config Entry Title",
-  "tidyup_gravestone.config.config_name.tooltip": "Describe the config entry, but in I18N way.\n[Default: true]"
+  "item.gravestone.obituary.desc.separator": ": ",
+  "item.gravestone.obituary.player_name.desc": "Player",
+  "item.gravestone.obituary.time.desc": "Time",
+  "item.gravestone.obituary.item_count.desc": "Items",
+  "item.gravestone.obituary.id.desc": "ID",
+  "item.gravestone.obituary.restore.desc1": "Shift + right-click while holding:",
+  "item.gravestone.obituary.restore.desc2": " Restore items (permission required)"
 }
