@@ -32,6 +32,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.VisibleForTesting;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICurio;
@@ -76,7 +77,6 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
 
     @Override
     public void fromDeath(Player player, Death death) {
-        //noinspection NullableProblems
         List<BuriedCurio> buriedCurios = CuriosApi.getCuriosInventory(player)
                 .map(ICuriosItemHandler::getCurios)
                 .stream().flatMap(curiosInv -> curiosInv.values().stream())
@@ -94,6 +94,7 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
                 }).sorted().toList();
 
         if (buriedCurios.isEmpty()) {
+            setBuriedCuriosAsEmpty();
             return;
         }
         setBuriedCurios(buriedCurios);
@@ -112,12 +113,13 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
         ICuriosItemHandler curiosInv = curiosInvOptional.get();
 
         Map<String, ICurioStacksHandler> playerCurios = curiosInv.getCurios();
-        List<BuriedCurio> curiosLeft = buriedCurios.stream().map(buriedCurio -> {
-            // restore to the original slot first
-            // yield the curio that cannot be equipped at the original slot but may be equipped at other slots
-            // yield null if the curio succeed to be equipped, or it definitely cannot be equipped at any other slots
-            // for the latter case, remember to add to itemsToInv manually
 
+        // restore to the original slot first
+        // yield the curio which is replaced with the buried one,
+        //   or the buried curio that cannot be equipped at the target slot for some reason
+        // yield null if the curio succeed to be equipped, or it definitely cannot be equipped at any other slots
+        // for the latter case, remember to add to itemsToInv manually
+        List<BuriedCurio> curiosLeft = buriedCurios.stream().map(buriedCurio -> {
             if (buriedCurio.unequipable()) {
                 // how wierd, but happened
                 itemsToInv.add(buriedCurio.itemStack);
@@ -150,21 +152,24 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
             }
 
             ItemStack presentItem = stackHandler.getStackInSlot(buriedCurio.slot);
-            if (!presentItem.isEmpty()) {
-                return buriedCurio;
+            if (presentItem.isEmpty()) {
+                stackHandler.setStackInSlot(buriedCurio.slot, buriedCurio.itemStack);
+                curio.onEquip(slotContext, buriedCurio.itemStack);
+                return null;
+            } else if (stackHandler.extractItem(buriedCurio.slot, buriedCurio.itemStack.getMaxStackSize(), true).getCount()
+                    == buriedCurio.itemStack.getCount()) {
+                stackHandler.setStackInSlot(buriedCurio.slot, buriedCurio.itemStack);
+                curio.onEquip(slotContext, buriedCurio.itemStack);
+                return new BuriedCurio(buriedCurio.slotType, buriedCurio.slot, presentItem);
             }
-
-            stackHandler.setStackInSlot(buriedCurio.slot, buriedCurio.itemStack);
-            curio.onEquip(slotContext, presentItem);
-            return null;
+            return buriedCurio;
         }).filter(Objects::nonNull).toList();
-        // ensure iter all curios in the mapper above
-        curiosLeft.forEach(buriedCurio -> {
-            // restore to the rest available slots
 
+        // ensure restore all curios first, and then resettle the left (curios replaced + buried curios failed to restore)
+        curiosLeft.forEach(buriedCurio -> {
             for (ICurioStacksHandler slotInv : playerCurios.values()) {
                 IDynamicStackHandler stackHandler = slotInv.getStacks();
-                for (int i = 0; i < stackHandler.getSlots(); i++) {
+                for (int i = 0, size = stackHandler.getSlots(); i < size; i++) {
 
                     @SuppressWarnings("OptionalGetWithoutIsPresent")  // already check in the mapper above
                     ICurio curio = buriedCurio.asCurio().resolve().get();
@@ -187,13 +192,15 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
 
             itemsToInv.add(buriedCurio.itemStack);
         });
-        setBuriedCurios(Collections.emptyList());
+
+        setBuriedCuriosAsEmpty();  // prevent the upper duplicated splitting item stack into additionalItems
     }
 
     @Override
     public void fromNBT(CompoundTag parent) {
         String tagKey = id.toString();
         if (!parent.contains(tagKey, Tag.TAG_COMPOUND)) {
+            setBuriedCuriosAsEmpty();
             return;
         }
 
@@ -210,6 +217,7 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
         ).sorted().toList();
 
         if (buriedCurios.isEmpty()) {
+            setBuriedCuriosAsEmpty();
             return;
         }
         setBuriedCurios(buriedCurios);
@@ -249,10 +257,15 @@ public class CuriosDeathInventory implements IExtendedDeathInventory {
         return buriedCurios.stream().map(BuriedCurio::itemStack);
     }
 
+    private void setBuriedCuriosAsEmpty() {
+        this.buriedCurios = Collections.emptyList();
+    }
+
     private void setBuriedCurios(List<BuriedCurio> buriedCurios) {
         this.buriedCurios = buriedCurios;
     }
 
+    @VisibleForTesting
     public record BuriedCurio(String slotType, int slot, ItemStack itemStack) implements Comparable<BuriedCurio> {
 
         @Override
