@@ -20,8 +20,10 @@
 package me.ctidy.mcmod.tidyup.gravestone.forge;
 
 import me.ctidy.mcmod.tidyup.gravestone.Constants;
+import me.ctidy.mcmod.tidyup.gravestone.Dependencies;
 import me.ctidy.mcmod.tidyup.gravestone.api.ExtendedDeathInventoryRegistry;
 import me.ctidy.mcmod.tidyup.gravestone.compat.CuriosDeathInventory;
+import me.ctidy.mcmod.tidyup.gravestone.compat.InventorioDeathInventory;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -37,11 +39,12 @@ public class ForgeMain {
 
     public ForgeMain() {
         ModLoadingContext.get().registerDisplayTest(IExtensionPoint.DisplayTest.IGNORE_ALL_VERSION);
-        ExtendedDeathInventoryRegistry.INSTANCE.register(Constants.id("curios"), CuriosDeathInventory::new);
-        // if (Dist.CLIENT == FMLEnvironment.dist) {
-        //     ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
-        //     MinecraftForge.EVENT_BUS.addListener(this::registerClientCommands);
-        // }
+        if (Dependencies.CURIOS.loaded()) {
+            ExtendedDeathInventoryRegistry.INSTANCE.register(Constants.id("curios"), CuriosDeathInventory::new);
+        }
+        if (Dependencies.INVENTORIO.loaded()) {
+            ExtendedDeathInventoryRegistry.INSTANCE.register(Constants.id("inventerio"), InventorioDeathInventory::new);
+        }
     }
 
 }
