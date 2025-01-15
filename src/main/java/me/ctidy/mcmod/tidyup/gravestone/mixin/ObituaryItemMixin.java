@@ -92,7 +92,7 @@ public abstract class ObituaryItemMixin extends Item {
         components.add(Component.empty());
         components.add(Component.translatable("item.gravestone.obituary.restore.desc1")
                 .withStyle(ChatFormatting.GRAY));
-        components.add(Component.literal("  ").withStyle(ChatFormatting.BLUE)
+        components.add(Component.literal(" ").withStyle(ChatFormatting.BLUE)
                 .append(Component.translatable("item.gravestone.obituary.restore.desc2")));
     }
 

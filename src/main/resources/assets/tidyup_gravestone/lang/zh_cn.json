@@ -6,6 +6,6 @@
   "item.gravestone.obituary.time.desc": "时间",
   "item.gravestone.obituary.item_count.desc": "物品",
   "item.gravestone.obituary.id.desc": "ID",
-  "item.gravestone.obituary.restore.desc1": "手持时 shift + 右键：",
+  "item.gravestone.obituary.restore.desc1": "按住潜行键交互时：",
   "item.gravestone.obituary.restore.desc2": "恢复物品（需要权限）"
 }

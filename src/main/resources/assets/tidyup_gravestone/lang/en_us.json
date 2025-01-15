@@ -6,6 +6,6 @@
   "item.gravestone.obituary.time.desc": "Time",
   "item.gravestone.obituary.item_count.desc": "Items",
   "item.gravestone.obituary.id.desc": "ID",
-  "item.gravestone.obituary.restore.desc1": "Shift + right-click while holding:",
-  "item.gravestone.obituary.restore.desc2": " Restore items (permission required)"
+  "item.gravestone.obituary.restore.desc1": "Use while holding Sneak key:",
+  "item.gravestone.obituary.restore.desc2": "Restore items (permission required)"
 }
