@@ -12,7 +12,7 @@ Tidy 的 墓碑 补丁模组，主要联动其它常见模组，如 饰品（Cur
 感谢 [Max Henkel](https://github.com/henkelmax) 以及所有贡献者共同开发并维护这个模组~
 
 ## 功能特性
-## 新功能：可扩展死亡物品栏 API （Extensible Death Inventory API）
+### # 新功能：可扩展死亡物品栏 API （Extensible Death Inventory API）
 
 **仅服务端**
 
@@ -20,7 +20,7 @@ Tidy 的 墓碑 补丁模组，主要联动其它常见模组，如 饰品（Cur
 
 目前内置了 Curios 与 Inventorio 的联动。
 
-## 改善：死亡笔记（讣告） tooltip
+### # 改善：死亡笔记（讣告） tooltip
 
 **仅客户端**
 

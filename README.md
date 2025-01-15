@@ -12,7 +12,7 @@ Grave Stone, made by [Max Henkel](https://github.com/henkelmax), is a mod that p
 Thank you to [Max Henkel](https://github.com/henkelmax) and all the contributors for developing and maintaining the mod~
 
 ## Features
-## New: Extensible Death Inventory API
+### # New: Extensible Death Inventory API
 
 **Server side only.**
 
@@ -20,7 +20,7 @@ Allow others to easily make death drop related compatibility for GraveStone mod,
 
 Built-in supports for Curios and Inventorio is now available.
 
-## Improve: Obituary tooltip
+### # Improve: Obituary tooltip
 
 **Client side only.**
 

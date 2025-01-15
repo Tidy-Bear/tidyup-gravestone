@@ -2,7 +2,7 @@ modLoader = "javafml" #mandatory
 loaderVersion = "${fml_request}" #mandatory
 
 license = "${license}" # Review your options at https://choosealicense.com/.
-issueTrackerURL="https://github.com/Tidy-Bear/tidyup_gravestone/issues" #optional
+issueTrackerURL="https://github.com/Tidy-Bear/tidyup-gravestone/issues" #optional
 
 
 [[mods]] #mandatory
