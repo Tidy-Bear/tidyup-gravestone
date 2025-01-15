@@ -48,6 +48,16 @@ public abstract class DeathMixin implements IWithExtensibleInventories {
     @Unique
     private ExtensibleDeathInventories inventories;
 
+    @Override
+    public ExtensibleDeathInventories getExtensibleInventories() {
+        return inventories;
+    }
+
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void createInventories(CallbackInfo ci) {
+        inventories = new ExtensibleDeathInventories();
+    }
+
     @Inject(method = "fromPlayer", at = @At("RETURN"))
     private static void fillInventoriesOnDead(Player player, CallbackInfoReturnable<Death> cir) {
         Death death = cir.getReturnValue();
@@ -59,14 +69,12 @@ public abstract class DeathMixin implements IWithExtensibleInventories {
         ((IWithExtensibleInventories) cir.getReturnValue()).getExtensibleInventories().fromNBT(tag);
     }
 
-    @Override
-    public ExtensibleDeathInventories getExtensibleInventories() {
-        return inventories;
-    }
-
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void createInventories(CallbackInfo ci) {
-        inventories = new ExtensibleDeathInventories();
+    @Inject(method = "toNBT(Z)Lnet/minecraft/nbt/CompoundTag;", at = @At("RETURN"))
+    private void dumpInventoriesToNBT(boolean withItems, CallbackInfoReturnable<CompoundTag> cir) {
+        if (!withItems) {
+            return;
+        }
+        inventories.toNBT(cir.getReturnValue());
     }
 
     @Redirect(method = "processDrops", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/NonNullList;addAll(Ljava/util/Collection;)Z"))
@@ -78,14 +86,6 @@ public abstract class DeathMixin implements IWithExtensibleInventories {
     @Inject(method = "getAllItems", at = @At("RETURN"))
     private void getAllItems(CallbackInfoReturnable<NonNullList<ItemStack>> cir) {
         cir.getReturnValue().addAll(inventories.getAllItemsAsStream().toList());
-    }
-
-    @Inject(method = "toNBT(Z)Lnet/minecraft/nbt/CompoundTag;", at = @At("RETURN"))
-    private void dumpInventoriesToNBT(boolean withItems, CallbackInfoReturnable<CompoundTag> cir) {
-        if (!withItems) {
-            return;
-        }
-        inventories.toNBT(cir.getReturnValue());
     }
 
 }

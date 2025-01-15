@@ -65,25 +65,15 @@ public class ExtensibleDeathInventories {
     }
 
     /**
-     * The map return is unmodifiable.
+     * @return an unmodifiable map
      */
     public Map<ResourceLocation, IExtendedDeathInventory> asMap() {
         return inventories;
     }
 
-    public Stream<ItemStack> getAllItemsAsStream() {
-        return inventories.values().stream().flatMap(IExtendedDeathInventory::getAllItemsAsStream);
-    }
-
     public void fromDeath(Player player, Death death) {
         for (IExtendedDeathInventory inv : inventories.values()) {
             inv.fromDeath(player, death);
-        }
-    }
-
-    public void restorePlayerInventory(NonNullList<ItemStack> itemsToInv, Player player, Death death) {
-        for (IExtendedDeathInventory inv : inventories.values()) {
-            inv.restorePlayerInventory(itemsToInv, player, death);
         }
     }
 
@@ -106,6 +96,16 @@ public class ExtensibleDeathInventories {
         //     return;
         // }
         // parent.put(TAG_KEY, root);
+    }
+
+    public Stream<ItemStack> getAllItemsAsStream() {
+        return inventories.values().stream().flatMap(IExtendedDeathInventory::getAllItemsAsStream);
+    }
+
+    public void restorePlayerInventory(NonNullList<ItemStack> itemsToInv, Player player, Death death) {
+        for (IExtendedDeathInventory inv : inventories.values()) {
+            inv.restorePlayerInventory(itemsToInv, player, death);
+        }
     }
 
 }

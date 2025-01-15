@@ -49,6 +49,18 @@ public interface IExtendedDeathInventory {
     void fromDeath(Player player, Death death);
 
     /**
+     * @apiNote Get data from its own child {@link CompoundTag} of the {@code parent} instead of reading data from
+     *   {@code parent} directly.
+     */
+    void fromNBT(CompoundTag parent);
+
+    /**
+     * @apiNote Create its own {@link CompoundTag} as a child tag of the {@code parent} instead of writing data into
+     *   {@code parent} directly.
+     */
+    void toNBT(CompoundTag parent);
+
+    /**
      * Restores dropping items which will try to follow the item order before death. <br/>
      * @apiNote After calling this method, all items left in its own store will be added to player's inventory. <br/>
      * Thus, it's recommended to either add items to {@code itemsToInv} or properly restore it, and then clear ALL data
@@ -61,18 +73,6 @@ public interface IExtendedDeathInventory {
      * @param death Death info.
      */
     void restorePlayerInventory(NonNullList<ItemStack> itemsToInv, Player player, Death death);
-
-    /**
-     * @apiNote Get data from its own child {@link CompoundTag} of the {@code parent} instead of reading data from
-     *   {@code parent} directly.
-     */
-    void fromNBT(CompoundTag parent);
-
-    /**
-     * @apiNote Create its own {@link CompoundTag} as a child tag of the {@code parent} instead of writing data into
-     *   {@code parent} directly.
-     */
-    void toNBT(CompoundTag parent);
 
     Stream<ItemStack> getAllItemsAsStream();
 

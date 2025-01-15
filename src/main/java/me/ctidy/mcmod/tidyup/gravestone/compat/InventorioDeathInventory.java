@@ -83,39 +83,20 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
             return;
         }
         List<BuriedItem> buriedItems = Arrays.stream(InventoryArea.VALUES)
-                .flatMap(invArea -> invArea.getBuriedItemsAsStream(invAddon))
+                .flatMap(invArea -> {
+                    List<ItemStack> inv = invArea.getInventory(invAddon);
+                    return IntStream.range(0, inv.size())
+                            .mapToObj(i -> {
+                                ItemStack itemStack = inv.get(i);
+                                return itemStack.isEmpty() ? null : new BuriedItem(invArea, i, itemStack);
+                            }).filter(Objects::nonNull);
+                })
                 .sorted().toList();
         if (buriedItems.isEmpty()) {
             setBuriedItemsAsEmpty();
             return;
         }
         setBuriedItems(buriedItems);
-    }
-
-    @Override
-    public void restorePlayerInventory(NonNullList<ItemStack> itemsToInv, Player player, Death death) {
-        if (buriedItems.isEmpty()) {
-            return;
-        }
-
-        PlayerInventoryAddon invAddon = InventorioAPI.getInventoryAddon(player);
-        if (invAddon == null) {
-            // itemsToInv.addAll(buriedItems.stream().map(BuriedItem::itemStack).toList());  // leave it to the upper
-            return;
-        }
-
-        // restore to the original slot first
-        // yield the item which is replaced with the buried one, or the buried item whose slot is now invalid
-        // yield null if the curio succeed to be equipped, or it definitely cannot be equipped at any other slots
-        // for the latter case, remember to add to itemsToInv manually
-        List<BuriedItem> itemsLeft = buriedItems.stream()
-                .map(buriedItem -> buriedItem.restore(itemsToInv, invAddon))
-                .filter(Objects::nonNull).toList();
-
-        // ensure restore all items first, and then resettle the left (items replaced + buried items each with invalid slot)
-        itemsLeft.forEach(buriedItem -> buriedItem.resettle(itemsToInv, invAddon));
-
-        setBuriedItemsAsEmpty();  // prevent the upper duplicated splitting item stack into additionalItems
     }
 
     @Override
@@ -128,14 +109,7 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
 
         CompoundTag invRoot = parent.getCompound(tagKey);
         List<BuriedItem> buriedItems = invRoot.getAllKeys().stream().flatMap(area -> invRoot.getList(area, Tag.TAG_COMPOUND)
-                .stream().map(rawTag -> {
-                    CompoundTag tag = (CompoundTag) rawTag;
-                    ItemStack itemStack = ItemStack.of(tag);
-                    if (itemStack.isEmpty()) {
-                        return null;
-                    }
-                    return new BuriedItem(InventoryArea.of(area), tag.getInt("Slot"), itemStack);
-                }).filter(Objects::nonNull)
+                .stream().map(rawTag -> BuriedItem.fromNBT(area, (CompoundTag) rawTag)).filter(Objects::nonNull)
         ).sorted().toList();
 
         if (buriedItems.isEmpty()) {
@@ -152,23 +126,32 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
         }
         CompoundTag invRoot = new CompoundTag();
         for (BuriedItem buriedItem : buriedItems) {
-            if (buriedItem.itemStack.isEmpty()) {
-                continue;
-            }
-
-            ListTag listTag = invRoot.getList(buriedItem.area.tagName(), Tag.TAG_COMPOUND);
-            if (listTag.isEmpty()) {
-                invRoot.put(buriedItem.area.tagName(), listTag);
-            }
-
-            CompoundTag itemTag = new CompoundTag();
-            itemTag.putInt("Slot", buriedItem.slot);
-            buriedItem.itemStack.save(itemTag);
-            listTag.add(itemTag);
+            buriedItem.toNBT(invRoot);
         }
         if (!invRoot.isEmpty()) {
             parent.put(id.toString(), invRoot);
         }
+    }
+
+    @Override
+    public void restorePlayerInventory(NonNullList<ItemStack> itemsToInv, Player player, Death death) {
+        if (buriedItems.isEmpty()) {
+            return;
+        }
+
+        PlayerInventoryAddon invAddon = InventorioAPI.getInventoryAddon(player);
+        if (invAddon == null) {
+            // itemsToInv.addAll(buriedItems.stream().map(BuriedItem::itemStack).toList());  // leave it to the upper
+            return;
+        }
+
+        List<BuriedItem> itemsLeft = buriedItems.stream()
+                .map(buriedItem -> buriedItem.restore(itemsToInv, invAddon))
+                .filter(Objects::nonNull).toList();
+        // ensure restore all items first, and then resettle the left (items replaced + buried items each with invalid slot)
+        itemsLeft.forEach(buriedItem -> buriedItem.resettle(itemsToInv, invAddon));
+
+        setBuriedItemsAsEmpty();  // prevent the upper duplicated splitting item stack into additionalItems
     }
 
     @Override
@@ -193,12 +176,34 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
             public boolean isItemValid(PlayerInventoryAddon invAddon, int slot, ItemStack itemStack) {
                 return false;
             }
+
+            @Override
+            public boolean resettle(PlayerInventoryAddon invAddon, ItemStack itemStack) {
+                return false;
+            }
         },
         DEEP_POCKETS(GeneralConstants.INVENTORY_ADDON_DEEP_POCKETS_RANGE.getFirst(), invAddon -> invAddon.deepPockets) {
             @Override
             public boolean isItemValid(PlayerInventoryAddon invAddon, int slot, ItemStack itemStack) {
                 IntRange range = invAddon.getAvailableDeepPocketsRange();
                 return !range.isEmpty() && range.contains(slot);
+            }
+
+            @Override
+            public boolean resettle(PlayerInventoryAddon invAddon, ItemStack itemStack) {
+                List<ItemStack> inv = getInventory(invAddon);
+                IntRange range = invAddon.getAvailableDeepPocketsRange();
+                if (range.isEmpty()) {
+                    return false;
+                }
+                int size = range.getLast();
+                for (int i = 0; i < size; i++) {
+                    if (inv.get(i).isEmpty()) {
+                        inv.set(i, itemStack);
+                        return true;
+                    }
+                }
+                return false;
             }
         },
         UTILITY_BELT(GeneralConstants.INVENTORY_ADDON_UTILITY_BELT_RANGE.getFirst(), invAddon -> invAddon.utilityBelt) {
@@ -207,11 +212,38 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
                 int size = invAddon.getAvailableUtilityBeltSize();
                 return slot < size && slot >= 0;
             }
+
+            @Override
+            public boolean resettle(PlayerInventoryAddon invAddon, ItemStack itemStack) {
+                List<ItemStack> inv = getInventory(invAddon);
+                int size = invAddon.getAvailableUtilityBeltSize();
+                for (int i = 0; i < size; i++) {
+                    if (inv.get(i).isEmpty()) {
+                        inv.set(i, itemStack);
+                        return true;
+                    }
+                }
+                return false;
+            }
         },
         TOOL_BELT(GeneralConstants.INVENTORY_ADDON_TOOL_BELT_INDEX_OFFSET, invAddon -> invAddon.toolBelt) {
             @Override
             public boolean isItemValid(PlayerInventoryAddon invAddon, int slot, ItemStack itemStack) {
-                return invAddon.findFittingToolBeltIndex(itemStack) == slot;
+                return PlayerInventoryAddon.getToolBeltTemplates().get(slot).test(itemStack, invAddon);
+            }
+
+            @Override
+            public boolean resettle(PlayerInventoryAddon invAddon, ItemStack itemStack) {
+                List<ItemStack> inv = getInventory(invAddon);
+                ImmutableList<ToolBeltSlotTemplate> templates = PlayerInventoryAddon.getToolBeltTemplates();
+                for (int i = 0, size = templates.size(); i < size; i++) {
+                    ToolBeltSlotTemplate template = templates.get(i);
+                    if (template.test(itemStack, invAddon) && inv.get(i).isEmpty()) {
+                        inv.set(i, itemStack);
+                        return true;
+                    }
+                }
+                return false;
             }
         },;
 
@@ -244,21 +276,22 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
             return itemsGetter.apply(invAddon);
         }
 
-        public Stream<BuriedItem> getBuriedItemsAsStream(PlayerInventoryAddon invAddon) {
-            List<ItemStack> inv = getInventory(invAddon);
-            return IntStream.range(0, inv.size())
-                    .mapToObj(i -> {
-                        ItemStack itemStack = inv.get(i);
-                        return itemStack.isEmpty() ? null : new BuriedItem(this, i, itemStack);
-                    }).filter(Objects::nonNull);
-        }
-
         public abstract boolean isItemValid(PlayerInventoryAddon invAddon, int slot, ItemStack itemStack);
+
+        public abstract boolean resettle(PlayerInventoryAddon invAddon, ItemStack itemStack);
 
     }
 
     @VisibleForTesting
     public record BuriedItem(InventoryArea area, int slot, ItemStack itemStack) implements Comparable<BuriedItem> {
+
+        public static @Nullable BuriedItem fromNBT(String areaName, CompoundTag itemTag) {
+            ItemStack itemStack = ItemStack.of(itemTag);
+            if (itemStack.isEmpty()) {
+                return null;
+            }
+            return new BuriedItem(InventoryArea.of(areaName), itemTag.getInt("Slot"), itemStack);
+        }
 
         @Override
         public int compareTo(@NotNull InventorioDeathInventory.BuriedItem other) {
@@ -269,12 +302,40 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
             return i;
         }
 
-        public boolean unequipable() {
-            return itemStack.isEmpty() || itemStack.getEnchantmentLevel(Enchantments.BINDING_CURSE) > 0;
+        public void toNBT(CompoundTag parent) {
+            if (itemStack.isEmpty()) {
+                return;
+            }
+
+            ListTag listTag = parent.getList(area.tagName(), Tag.TAG_COMPOUND);
+            if (listTag.isEmpty()) {
+                parent.put(area.tagName(), listTag);
+            }
+
+            CompoundTag itemTag = new CompoundTag();
+            itemTag.putInt("Slot", slot);
+            itemStack.save(itemTag);
+            listTag.add(itemTag);
         }
 
+        public boolean shouldNotBeEquipped() {
+            return itemStack.getEnchantmentLevel(Enchantments.BINDING_CURSE) > 0;
+        }
+
+        /**
+         * Restore to the original slot as far as possible.<br/>
+         * @return Case 1: {@code null} if the buried itemStack: <ul>
+         *         <li>succeed to be equipped (the target slot is empty);</li>
+         *         <li>definitely cannot be equipped at any other slots. (will be automatically added into {@code itemsToInv})</li></ul>
+         *         Case 2: A newly-created object with the {@code itemStack} replaced by the buried one. <br/>
+         *         Case 3: The object itself that cannot be equipped at the target slot for some reason. <br/>
+         */
         public @Nullable BuriedItem restore(NonNullList<ItemStack> itemsToInv, PlayerInventoryAddon invAddon) {
-            if (unequipable()) {
+            if (itemStack.isEmpty()) {
+                return null;
+            }
+            if (shouldNotBeEquipped()) {
+                // how weird, but happened
                 // definitely cannot be equipped at any other slots
                 itemsToInv.add(itemStack);
                 return null;
@@ -289,24 +350,8 @@ public class InventorioDeathInventory implements IExtendedDeathInventory {
         }
 
         public void resettle(NonNullList<ItemStack> itemsToInv, PlayerInventoryAddon invAddon) {
-            List<ItemStack> inv = area.getInventory(invAddon);
-            if (area == InventoryArea.TOOL_BELT) {
-                ImmutableList<ToolBeltSlotTemplate> templates = PlayerInventoryAddon.getToolBeltTemplates();
-                for (int i = 0, size = templates.size(); i < size; i++) {
-                    ToolBeltSlotTemplate template = templates.get(i);
-                    if (template.test(itemStack, invAddon) && inv.get(i).isEmpty()) {
-                        inv.set(i, itemStack);
-                        return;
-                    }
-                }
-                itemsToInv.add(itemStack);
+            if (area.resettle(invAddon, itemStack)) {
                 return;
-            }
-            for (int i = 0, size = inv.size(); i < size; i++) {
-                if (inv.get(i).isEmpty()) {
-                    inv.set(i, itemStack);
-                    return;
-                }
             }
             itemsToInv.add(itemStack);
         }
